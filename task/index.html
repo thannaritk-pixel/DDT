@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delay Discounting Task</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <!-- Setup screen (for the researcher) -->
+    <section id="screen-setup" class="screen">
+      <h1>Delay Discounting Task</h1>
+      <p class="muted">หน้าจอนี้สำหรับผู้วิจัย ตั้งค่าแล้วส่งเครื่องให้ผู้เข้าร่วม</p>
+      <label>รหัสผู้เข้าร่วม (subjID)
+        <input id="in-id" type="text" placeholder="เช่น S001" autocomplete="off">
+      </label>
+      <label>รูปแบบงาน (mode)
+        <select id="in-mode">
+          <option value="kirby">Kirby MCQ 27 ข้อ (Kirby et al., 1999)</option>
+          <option value="grid">Model-based grid 56 ข้อ (สำหรับ fit model)</option>
+          <option value="adjusting">Adjusting-amount (Du, Green &amp; Myerson, 2002)</option>
+        </select>
+      </label>
+      <label>ตัวคูณจำนวนเงิน (amount scale)
+        <input id="in-scale" type="number" min="0.01" step="any" value="10">
+      </label>
+      <label>หน่วยเงิน
+        <input id="in-currency" type="text" value="บาท">
+      </label>
+      <label class="row"><input id="in-practice" type="checkbox" checked> มีข้อฝึกหัด 2 ข้อ</label>
+      <label class="row"><input id="in-catch" type="checkbox" checked> แทรก catch trials (ตรวจความตั้งใจ)</label>
+      <button id="btn-start" class="primary">เริ่ม</button>
+      <p class="muted small">ค่าเหล่านี้กำหนดผ่าน URL ได้ เช่น
+        <code>index.html?id=S001&amp;mode=grid&amp;scale=10&amp;autostart=1</code></p>
+    </section>
+
+    <!-- Instructions -->
+    <section id="screen-instr" class="screen hidden">
+      <h2>คำชี้แจง</h2>
+      <div id="instr-text"></div>
+      <button id="btn-instr" class="primary">เข้าใจแล้ว เริ่มได้</button>
+    </section>
+
+    <!-- Trial screen -->
+    <section id="screen-trial" class="screen hidden">
+      <p id="trial-progress" class="muted small"></p>
+      <p class="question">คุณจะเลือกรับเงินแบบไหน?</p>
+      <div class="options">
+        <button id="opt-left" class="option"></button>
+        <button id="opt-right" class="option"></button>
+      </div>
+      <p class="muted small keys">แป้นพิมพ์: <kbd>F</kbd> = ซ้าย, <kbd>J</kbd> = ขวา</p>
+    </section>
+
+    <!-- Fixation / ITI -->
+    <section id="screen-iti" class="screen hidden"><div class="fix">+</div></section>
+
+    <!-- Message between blocks / practice end -->
+    <section id="screen-msg" class="screen hidden">
+      <div id="msg-text"></div>
+      <button id="btn-msg" class="primary">ต่อไป</button>
+    </section>
+
+    <!-- End -->
+    <section id="screen-end" class="screen hidden">
+      <h2>จบการทดสอบ ขอบคุณค่ะ/ครับ</h2>
+      <p class="muted">ข้อมูลส่วนนี้สำหรับผู้วิจัย</p>
+      <pre id="summary"></pre>
+      <div class="btns">
+        <button id="btn-dl-tsv" class="primary">ดาวน์โหลด .txt (hBayesDM)</button>
+        <button id="btn-dl-csv">ดาวน์โหลด .csv</button>
+      </div>
+    </section>
+  </main>
+  <script src="designs.js"></script>
+  <script src="ddt.js"></script>
+</body>
+</html>
