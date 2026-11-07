@@ -54,6 +54,26 @@ task/index.html?id=S001&mode=grid&scale=10&currency=บาท&autostart=1
 เมื่อจบ ระบบดาวน์โหลดไฟล์ `.txt` อัตโนมัติ และมีปุ่มดาวน์โหลด `.csv` (มีข้อฝึกหัดและ catch trials ครบ)
 ข้อมูลระหว่างทำจะสำรองใน `localStorage` ด้วย
 
+### ใช้งานบน iPad
+
+Safari บน iPad เปิดไฟล์ HTML ในเครื่องโดยตรงไม่ได้ ต้องเปิดผ่านลิงก์เว็บ วิธีที่ง่ายที่สุดคือ **GitHub Pages** (ฟรี)
+
+1. merge branch นี้เข้า `main`
+2. บน GitHub ไปที่ **Settings → Pages** เลือก *Source: Deploy from a branch*, *Branch: `main`*, โฟลเดอร์ `/ (root)` แล้วกด Save
+   (repo ต้องเป็น public ถ้าใช้บัญชีฟรี)
+3. รอ 1–2 นาที แล้วเปิดใน Safari: `https://<username>.github.io/<repo>/`
+   ใส่ค่าทาง URL ได้ เช่น `https://<username>.github.io/<repo>/?id=S001&mode=grid&autostart=1`
+4. (แนะนำ) กดปุ่ม **แชร์ → Add to Home Screen** เพื่อเปิดแบบเต็มจอเหมือนแอป
+5. (แนะนำ) เปิด **Guided Access** (Settings → Accessibility → Guided Access แล้วกดปุ่ม Home/ปุ่มด้านข้าง 3 ครั้ง)
+   เพื่อล็อกไม่ให้ผู้เข้าร่วมออกจากหน้างาน
+
+เมื่อทำเสร็จ ไฟล์ `.txt` จะถูกบันทึกไว้ที่แอป **Files → Downloads** (Safari อาจถามก่อนดาวน์โหลด ให้กด Download)
+แล้วส่งออกด้วย AirDrop, อีเมล หรือ Google Drive เมื่อโหลดหน้าเว็บแล้วจะทำงานต่อได้แม้ไม่มีอินเทอร์เน็ต
+แต่ห้ามรีเฟรชหน้าระหว่างทำ
+
+ทางเลือกอื่น: บนคอมพิวเตอร์ในวง Wi-Fi เดียวกัน รัน `python3 -m http.server 8000` ในโฟลเดอร์ repo
+แล้วเปิด `http://<IP ของคอมพิวเตอร์>:8000/` บน iPad
+
 ### รูปแบบข้อมูล
 
 ไฟล์ `.txt` (tab-separated) ใช้ชื่อคอลัมน์เดียวกับ hBayesDM จึงใช้ได้ทันที
