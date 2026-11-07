@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Delay Discounting Task</title>
+  <style>
+:root {
+  --bg: #f7f7f5;
+  --fg: #1d1d1b;
+  --muted: #6b6b66;
+  --card: #ffffff;
+  --border: #d8d8d2;
+  --accent: #2f5d8a;
+  --accent-fg: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615;
+    --fg: #ecece8;
+    --muted: #9a9a94;
+    --card: #222220;
+    --border: #3a3a37;
+    --accent: #6e9ccc;
+    --accent-fg: #0d0d0c;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Sarabun", "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+#app { max-width: 820px; margin: 0 auto; padding: max(24px, env(safe-area-inset-top)) 16px 24px; min-height: 100%; }
+.screen { display: flex; flex-direction: column; gap: 14px; }
+.hidden { display: none !important; }
+h1, h2 { margin: 0 0 4px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+label { display: flex; flex-direction: column; gap: 4px; }
+label.row { flex-direction: row; align-items: center; gap: 8px; }
+input[type=text], input[type=number], select {
+  font: inherit; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--card); color: var(--fg);
+}
+button {
+  font: inherit; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--card); color: var(--fg);
+}
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+#screen-trial { align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
+.question { font-size: 22px; margin: 0; }
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
+.option {
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  min-height: 160px; padding: 20px 12px; font-size: 24px; line-height: 1.35;
+  border-width: 2px; border-radius: 16px; touch-action: manipulation;
+}
+.option .amt { display: block; font-size: 32px; font-weight: 700; }
+.option .when { display: block; color: var(--muted); font-size: 20px; }
+.option.chosen { border-color: var(--accent); outline: 3px solid var(--accent); }
+.option:disabled { cursor: default; }
+@media (max-width: 520px) {
+  .options { grid-template-columns: 1fr; }
+  .option { min-height: 120px; }
+  .keys { display: none; }
+}
+kbd { border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; font-size: 13px; }
+
+#screen-iti { align-items: center; justify-content: center; min-height: 80vh; }
+.fix { font-size: 48px; color: var(--muted); }
+pre { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; white-space: pre-wrap; font-size: 14px; }
+/* Touch devices (iPad/phone): hide the keyboard hint */
+@media (hover: none) and (pointer: coarse) { .keys { display: none; } }
+
+/* Web app additions on top of task/style.css */
+/* Leave room for the fixed tab bar so the last button is never covered. */
+#app { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+body.in-task #app { padding-bottom: 24px; }
+body.in-task #tabbar, body.in-task #pending-banner { display: none; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+           background: var(--card); color: var(--fg); }
+input[type=search] { font: inherit; padding: 8px 12px; border: 1px solid var(--border); border-radius: 20px;
+                     background: var(--card); color: var(--fg); }
+button.big { padding: 14px 18px; font-size: 20px; }
+button.link { background: none; border: none; color: var(--muted); text-decoration: underline; }
+.small-btn { padding: 4px 10px; font-size: 14px; }
+a.btn { display: inline-block; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border);
+        color: var(--fg); text-decoration: none; background: var(--card); }
+.error { color: #b3261e; }
+.status { font-weight: 600; }
+.status.ok { color: #1e7a3c; }
+.status.fail { color: #b3261e; }
+
+.banner { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: center;
+          justify-content: center; padding: 8px 12px; background: #fff3cd; color: #5c4400; font-size: 15px; }
+
+#tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
+          background: var(--card); border-top: 1px solid var(--border);
+          padding-bottom: env(safe-area-inset-bottom); z-index: 4; }
+#tabbar button { border: none; border-radius: 0; background: none; padding: 8px 0 10px; font-size: 20px;
+                 color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+#tabbar button span { font-size: 13px; }
+#tabbar button.active { color: var(--accent); }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+        display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.card.excluded { opacity: .55; }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card-top b { font-size: 19px; }
+.card .meta { color: var(--muted); font-size: 14px; }
+.card .nums { font-size: 15px; font-variant-numeric: tabular-nums; }
+.card .actions { display: flex; gap: 8px; margin-top: 4px; }
+.card .actions button { padding: 4px 12px; font-size: 14px; }
+.tag { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 10px; margin-right: 4px;
+       border: 1px solid var(--border); }
+.tag.warn { background: #fff3cd; color: #5c4400; border-color: #e6d48a; }
+.tag.bad { background: #fde7e7; color: #8a1c1c; border-color: #f0b4b4; }
+
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+.table-wrap { overflow-x: auto; }
+
+.dlg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center;
+       justify-content: center; z-index: 10; padding: 16px; }
+.dlg-box { background: var(--bg); border-radius: 14px; padding: 18px; width: 100%; max-width: 440px;
+           display: flex; flex-direction: column; gap: 12px; }
+
+  </style>
+</head>
+<body>
+  <div id="pending-banner" class="banner hidden">
+    <span id="pending-text"></span>
+    <button id="btn-retry" class="small-btn">ส่งอีกครั้ง</button>
+  </div>
+
+  <main id="app">
+    <!-- ===== Researcher: start ===== -->
+    <section id="tab-start" class="tab screen">
+      <h1>Delay Discounting Task</h1>
+      <p class="muted small" id="user-line"></p>
+      <label>รหัสผู้เข้าร่วม (subjID)
+        <input id="in-id" type="text" list="known-ids" placeholder="เช่น S001 (ห้ามใช้ชื่อจริง/เลขบัตรประชาชน)" autocomplete="off">
+        <datalist id="known-ids"></datalist>
+      </label>
+      <div class="two">
+        <label>กลุ่ม (group)<select id="in-group"></select></label>
+        <label>ครั้งที่ (session)<select id="in-label"></select></label>
+      </div>
+      <label>รูปแบบงาน (mode)
+        <select id="in-mode">
+          <option value="grid">Model-based grid 56 ข้อ (แนะนำสำหรับ fit model)</option>
+          <option value="kirby">Kirby MCQ 27 ข้อ (Kirby et al., 1999)</option>
+          <option value="adjusting">Adjusting-amount 42 ข้อ (Du et al., 2002)</option>
+        </select>
+      </label>
+      <div class="two">
+        <label>ตัวคูณจำนวนเงิน<input id="in-scale" type="number" min="0.01" step="any" value="10"></label>
+        <label>หน่วยเงิน<input id="in-currency" type="text" value="บาท"></label>
+      </div>
+      <label class="row"><input id="in-practice" type="checkbox" checked> มีข้อฝึกหัด 2 ข้อ</label>
+      <label class="row"><input id="in-catch" type="checkbox" checked> แทรก catch trials 3 ข้อ</label>
+      <p id="start-error" class="error hidden"></p>
+      <button id="btn-start" class="primary big">เริ่มงาน (ส่ง iPad ให้ผู้เข้าร่วม)</button>
+    </section>
+
+    <!-- ===== Researcher: data ===== -->
+    <section id="tab-data" class="tab screen hidden">
+      <h2>ข้อมูล</h2>
+      <input id="search" type="search" placeholder="ค้นหา subjID / กลุ่ม / mode">
+      <p id="data-status" class="muted small"></p>
+      <div id="cards"></div>
+    </section>
+
+    <!-- ===== Researcher: summary ===== -->
+    <section id="tab-summary" class="tab screen hidden">
+      <h2>สรุป</h2>
+      <p class="muted small">ไม่นับ session ที่ถูก exclude หรือผิด catch trial เกินเกณฑ์ (ตั้งค่า <code>max_catch_fail</code>)</p>
+      <div id="summary-body"></div>
+      <div class="btns">
+        <button id="btn-export" class="primary">ส่งออก CSV ไปที่ Google Drive</button>
+        <a id="sheet-link" class="btn" target="_blank" rel="noopener">เปิด Google Sheet</a>
+      </div>
+      <div id="export-result" class="small"></div>
+    </section>
+
+    <!-- ===== Participant screens ===== -->
+    <section id="screen-instr" class="screen task hidden">
+      <h2>คำชี้แจง</h2>
+      <div id="instr-text"></div>
+      <button id="btn-instr" class="primary big">เข้าใจแล้ว เริ่มได้</button>
+      <button id="btn-abort" class="link small">ยกเลิก (ผู้วิจัย)</button>
+    </section>
+    <section id="screen-trial" class="screen task hidden">
+      <p id="trial-progress" class="muted small"></p>
+      <p class="question">คุณจะเลือกรับเงินแบบไหน?</p>
+      <div class="options">
+        <button id="opt-left" class="option"></button>
+        <button id="opt-right" class="option"></button>
+      </div>
+      <p class="muted small keys">แป้นพิมพ์: <kbd>F</kbd> = ซ้าย, <kbd>J</kbd> = ขวา</p>
+    </section>
+    <section id="screen-iti" class="screen task hidden"><div class="fix">+</div></section>
+    <section id="screen-msg" class="screen task hidden">
+      <div id="msg-text"></div>
+      <button id="btn-msg" class="primary big">ต่อไป</button>
+    </section>
+    <section id="screen-end" class="screen task hidden">
+      <h2>จบการทดสอบ ขอบคุณค่ะ/ครับ</h2>
+      <p>กรุณาส่งเครื่องคืนผู้วิจัย</p>
+      <p id="save-status" class="status"></p>
+      <pre id="end-summary" class="hidden"></pre>
+      <div class="btns">
+        <button id="btn-show-result">ดูผล (ผู้วิจัย)</button>
+        <button id="btn-home" class="primary">กลับหน้าหลัก</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Edit dialog -->
+  <div id="dlg" class="dlg hidden">
+    <div class="dlg-box">
+      <h3 id="dlg-title">แก้ไข</h3>
+      <label>กลุ่ม<select id="ed-group"></select></label>
+      <label>ครั้งที่<select id="ed-label"></select></label>
+      <label class="row"><input id="ed-exclude" type="checkbox"> Exclude จากการวิเคราะห์</label>
+      <label>หมายเหตุ<textarea id="ed-note" rows="3"></textarea></label>
+      <p id="dlg-error" class="error hidden"></p>
+      <div class="btns">
+        <button id="ed-save" class="primary">บันทึก</button>
+        <button id="ed-cancel">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <nav id="tabbar">
+    <button data-tab="tab-start" class="active">▶<span>เริ่ม</span></button>
+    <button data-tab="tab-data">☰<span>ข้อมูล</span></button>
+    <button data-tab="tab-summary">Σ<span>สรุป</span></button>
+  </nav>
+
+  <script>
+// ---- task/designs.js ----
+/*
+ * Trial designs for the delay discounting task.
+ * Amounts are in "base units" and multiplied by the `scale` setting at run time.
+ * Delays are in days. The sooner option is always "today" (delay 0).
+ */
+(function (global) {
+  'use strict';
+
+  // Kirby, Petry & Bickel (1999) Monetary Choice Questionnaire, 27 items, in the
+  // original presentation order. [SIR, LDR, delay_days]
+  // Magnitude: S = small (LDR 25-35), M = medium (50-60), L = large (75-85).
+  // Each magnitude has one item at each of 9 k levels:
+  // .00016 .0004 .001 .0025 .006 .016 .041 .10 .25
+  const KIRBY_27 = [
+    [54, 55, 117, 'M'], [55, 75, 61, 'L'], [19, 25, 53, 'S'], [31, 85, 7, 'L'],
+    [14, 25, 19, 'S'], [47, 50, 160, 'M'], [15, 35, 13, 'S'], [25, 60, 14, 'M'],
+    [78, 80, 192, 'L'], [40, 55, 62, 'M'], [11, 30, 7, 'S'], [67, 75, 119, 'L'],
+    [34, 35, 186, 'S'], [27, 50, 21, 'M'], [69, 85, 91, 'L'], [49, 60, 89, 'M'],
+    [80, 85, 157, 'L'], [24, 35, 29, 'S'], [33, 80, 14, 'L'], [28, 30, 179, 'S'],
+    [34, 50, 30, 'M'], [25, 30, 80, 'S'], [41, 75, 20, 'L'], [54, 60, 111, 'M'],
+    [54, 80, 30, 'L'], [22, 25, 136, 'S'], [20, 55, 7, 'M']
+  ];
+
+  // Small seeded RNG so trial orders can be reproduced from the saved seed.
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffle(arr, rng) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Round displayed money to a "natural" step so amounts look plausible.
+  function roundMoney(x) {
+    if (x >= 1000) return Math.round(x / 10) * 10;
+    if (x >= 100) return Math.round(x / 5) * 5;
+    return Math.round(x);
+  }
+
+  function impliedK(ss, ll, delay) {
+    return delay > 0 ? (ll / ss - 1) / delay : null;
+  }
+
+  function kirbyTrials(scale) {
+    return KIRBY_27.map(([sir, ldr, d, mag], i) => {
+      const ss = roundMoney(sir * scale), ll = roundMoney(ldr * scale);
+      return {
+        item: i + 1, block: mag, amount_sooner: ss, delay_sooner: 0,
+        amount_later: ll, delay_later: d, k_indiff: impliedK(ss, ll, d)
+      };
+    });
+  }
+
+  // Model-based grid: 7 delays x 8 sooner/later ratios = 56 trials. Because the
+  // implied indifference k = (LL/SS - 1)/D varies with both ratio and delay,
+  // the grid covers k from about 1e-4 to 6, so choices stay informative for
+  // both shallow and steep discounters (Kirby & Marakovic, 1996; Ahn et al., 2017).
+  const GRID_DELAYS = [1, 7, 14, 30, 90, 180, 365];
+  const GRID_RATIOS = [0.15, 0.3, 0.45, 0.6, 0.7, 0.8, 0.9, 0.96];
+  const GRID_LL = [40, 60, 85];
+
+  function gridTrials(scale, rng) {
+    const out = [];
+    let n = 0;
+    GRID_DELAYS.forEach((d) => {
+      GRID_RATIOS.forEach((r) => {
+        const llBase = GRID_LL[Math.floor(rng() * GRID_LL.length)];
+        const ll = roundMoney(llBase * scale);
+        const ss = Math.min(ll - 1, Math.max(1, roundMoney(ll * r)));
+        out.push({
+          item: ++n, block: 'grid', amount_sooner: ss, delay_sooner: 0,
+          amount_later: ll, delay_later: d, k_indiff: impliedK(ss, ll, d)
+        });
+      });
+    });
+    return shuffle(out, rng);
+  }
+
+  // Adjusting-amount procedure (Du, Green & Myerson, 2002). For each delay,
+  // the later amount is fixed and the immediate amount starts at 50% of it.
+  // After each choice the immediate amount moves by half the previous step,
+  // up if the later option was chosen and down if the sooner one was.
+  const ADJ = {
+    delays: [1, 7, 30, 90, 180, 365, 1825],
+    laterBase: 100,
+    nSteps: 6
+  };
+
+  // Catch trials: the sooner option is larger than the later one, so choosing
+  // "later" means the participant is not attending (or misunderstood).
+  const CATCH = [[80, 40, 30], [60, 25, 90], [95, 50, 7]];
+
+  function catchTrials(scale) {
+    return CATCH.map(([ss, ll, d], i) => ({
+      item: 900 + i + 1, block: 'catch', is_catch: 1,
+      amount_sooner: roundMoney(ss * scale), delay_sooner: 0,
+      amount_later: roundMoney(ll * scale), delay_later: d, k_indiff: null
+    }));
+  }
+
+  // Insert catch trials at random positions, never in the first 3 trials.
+  function insertCatch(trials, catches, rng) {
+    const out = trials.slice();
+    catches.forEach((c) => {
+      const pos = 3 + Math.floor(rng() * Math.max(1, out.length - 3));
+      out.splice(pos, 0, c);
+    });
+    return out;
+  }
+
+  const PRACTICE = [[50, 100, 365], [90, 95, 3]];
+
+  function practiceTrials(scale) {
+    return PRACTICE.map(([ss, ll, d], i) => ({
+      item: 800 + i + 1, block: 'practice', is_practice: 1,
+      amount_sooner: roundMoney(ss * scale), delay_sooner: 0,
+      amount_later: roundMoney(ll * scale), delay_later: d, k_indiff: impliedK(ss, ll, d)
+    }));
+  }
+
+  global.DDTDesigns = {
+    KIRBY_27, GRID_DELAYS, GRID_RATIOS, GRID_LL, ADJ,
+    mulberry32, shuffle, roundMoney, impliedK,
+    kirbyTrials, gridTrials, catchTrials, insertCatch, practiceTrials
+  };
+  if (typeof module !== 'undefined') module.exports = global.DDTDesigns;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ---- task/core.js ----
+/*
+ * Task logic with no DOM: builds the trial sequence, runs the adjusting-amount
+ * staircase and records rows. Used by the standalone page (task/ddt.js) and by
+ * the Apps Script web app (webapp/).
+ * Output rows follow the hBayesDM dd format (choice = 1 means the later option).
+ */
+(function (global) {
+  'use strict';
+  const D = global.DDTDesigns || (typeof require !== 'undefined' ? require('./designs.js') : null);
+
+  function fmtMoney(x) {
+    return Number(x).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+  }
+
+  // Kirby items keep exact day counts (as in the original MCQ); other modes
+  // use familiar calendar wording.
+  function fmtDelay(days, exactDays) {
+    if (days === 0) return 'วันนี้';
+    if (exactDays) return 'ในอีก ' + days + ' วัน';
+    const named = { 1: '1 วัน', 7: '1 สัปดาห์', 14: '2 สัปดาห์', 30: '1 เดือน',
+      90: '3 เดือน', 180: '6 เดือน', 365: '1 ปี', 1825: '5 ปี' };
+    return 'ในอีก ' + (named[days] || days + ' วัน');
+  }
+
+  function median(xs) {
+    if (!xs.length) return null;
+    const s = xs.slice().sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+  }
+
+  /**
+   * cfg: {id, mode: 'kirby'|'grid'|'adjusting', scale, currency, practice,
+   *       catchTrials, seed, extra: {...columns copied into every row}}
+   */
+  function createSession(cfg) {
+    const seed = cfg.seed != null && cfg.seed !== '' ? (parseInt(cfg.seed, 10) >>> 0)
+      : Math.floor(Math.random() * 2 ** 31);
+    const rng = D.mulberry32(seed);
+    const s = {
+      cfg, seed, rng, rows: [], phase: cfg.practice ? 'practice' : 'main',
+      practice: cfg.practice ? D.practiceTrials(cfg.scale) : [],
+      queue: [], adj: null, trialIndex: 0, startedAt: new Date().toISOString()
+    };
+
+    if (cfg.mode === 'adjusting') {
+      const delays = D.shuffle(D.ADJ.delays, rng);
+      const ll = D.roundMoney(D.ADJ.laterBase * cfg.scale);
+      const catches = cfg.catchTrials ? D.catchTrials(cfg.scale) : [];
+      const catchAfter = {};
+      catches.forEach((c, i) => {
+        const b = Math.floor(((i + 1) * delays.length) / (catches.length + 1));
+        catchAfter[b] = (catchAfter[b] || []).concat([c]);
+      });
+      s.adj = { delays, ll, blockIdx: 0, step: 0, ss: ll / 2, delta: ll / 4,
+        catchAfter, pendingCatch: [], indiff: {}, nCatch: catches.length };
+    } else {
+      let main = cfg.mode === 'kirby' ? D.kirbyTrials(cfg.scale) : D.gridTrials(cfg.scale, rng);
+      if (cfg.catchTrials) main = D.insertCatch(main, D.catchTrials(cfg.scale), rng);
+      s.queue = main;
+    }
+
+    function nextAdjusting() {
+      const a = s.adj;
+      if (a.pendingCatch.length) return a.pendingCatch.shift();
+      if (a.blockIdx >= a.delays.length) return null;
+      const d = a.delays[a.blockIdx];
+      const ss = Math.max(1, D.roundMoney(a.ss));
+      return {
+        item: a.blockIdx * D.ADJ.nSteps + a.step + 1, block: 'delay_' + d,
+        amount_sooner: ss, delay_sooner: 0, amount_later: a.ll, delay_later: d,
+        k_indiff: D.impliedK(ss, a.ll, d), adj_step: a.step + 1
+      };
+    }
+
+    function updateAdjusting(t, choice) {
+      if (t.is_catch) return;
+      const a = s.adj;
+      a.ss = Math.min(Math.max(a.ss + (choice === 1 ? a.delta : -a.delta), 0), a.ll);
+      a.delta /= 2;
+      a.step += 1;
+      if (a.step >= D.ADJ.nSteps) {
+        // Indifference point = immediate amount after the final adjustment.
+        a.indiff[a.delays[a.blockIdx]] = a.ss;
+        const after = a.catchAfter[a.blockIdx + 1];
+        if (after) a.pendingCatch.push(...after);
+        a.blockIdx += 1; a.step = 0; a.ss = a.ll / 2; a.delta = a.ll / 4;
+      }
+    }
+
+    /** Next trial of the current phase, or null when the phase is over. */
+    s.next = function () {
+      let t;
+      if (s.phase === 'practice') t = s.practice.shift() || null;
+      else if (cfg.mode === 'adjusting') t = nextAdjusting();
+      else t = s.queue.shift() || null;
+      if (t) t.later_on_left = rng() < 0.5 ? 1 : 0;
+      return t;
+    };
+
+    s.startMain = function () { s.phase = 'main'; };
+
+    s.record = function (t, choice, rtMs) {
+      s.trialIndex += 1;
+      const row = Object.assign({}, cfg.extra || {}, {
+        subjID: cfg.id, mode: cfg.mode, phase: s.phase,
+        trial: s.trialIndex, item: t.item, block: t.block,
+        delay_later: t.delay_later, amount_later: t.amount_later,
+        delay_sooner: t.delay_sooner, amount_sooner: t.amount_sooner,
+        choice: choice, rt_ms: Math.round(rtMs), later_on_left: t.later_on_left,
+        is_catch: t.is_catch ? 1 : 0,
+        k_indiff: t.k_indiff == null ? '' : +t.k_indiff.toPrecision(4),
+        adj_step: t.adj_step || '', scale: cfg.scale, currency: cfg.currency,
+        seed: seed, timestamp: new Date().toISOString()
+      });
+      s.rows.push(row);
+      if (s.phase === 'main' && cfg.mode === 'adjusting') updateAdjusting(t, choice);
+      return row;
+    };
+
+    s.progress = function () {
+      const done = s.rows.filter((r) => r.phase === 'main').length;
+      const total = cfg.mode === 'adjusting'
+        ? s.adj.delays.length * D.ADJ.nSteps + s.adj.nCatch
+        : done + s.queue.length;
+      return { done, total };
+    };
+
+    s.mainRows = () => s.rows.filter((r) => r.phase === 'main');
+    /** Rows for model fitting: main phase, no catch trials. */
+    s.fitRows = () => s.rows.filter((r) => r.phase === 'main' && !r.is_catch);
+
+    s.basicSummary = function () {
+      const main = s.mainRows();
+      const real = main.filter((r) => !r.is_catch);
+      const catches = main.filter((r) => r.is_catch);
+      return {
+        n_trials: real.length,
+        n_catch: catches.length,
+        catch_fail: catches.filter((r) => r.choice === 1).length,
+        prop_later: real.length ? real.reduce((a, r) => a + r.choice, 0) / real.length : null,
+        median_rt: median(real.map((r) => r.rt_ms))
+      };
+    };
+
+    return s;
+  }
+
+  function toDelimited(rows, sep) {
+    if (!rows.length) return '';
+    const cols = Object.keys(rows[0]);
+    const esc = (v) => {
+      const str = v == null ? '' : String(v);
+      return (sep === ',' && /[",\n]/.test(str)) ? '"' + str.replace(/"/g, '""') + '"' : str;
+    };
+    return [cols.join(sep)].concat(rows.map((r) => cols.map((c) => esc(r[c])).join(sep))).join('\n') + '\n';
+  }
+
+  global.DDTCore = { createSession, fmtMoney, fmtDelay, median, toDelimited };
+  if (typeof module !== 'undefined') module.exports = global.DDTCore;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ---- task/fit.js ----
+/*
+ * In-browser model fitting so researchers see results right after a session.
+ * Same models and parameterisation as analysis/ddt (Python):
+ *   V = A * f(D),  P(later) = 1 / (1 + exp(-beta * (V_LL - V_SS)))
+ * Parameters are fitted by maximum likelihood (Nelder-Mead on log k, log beta,
+ * several starting points). Amounts are used in raw currency units, as in
+ * hBayesDM, so beta depends on the currency scale.
+ * Python remains the reference for papers (more models, AIC/BIC weights).
+ */
+(function (global) {
+  'use strict';
+
+  const BOUNDS = { logk: [Math.log(1e-6), Math.log(20)], logb: [Math.log(1e-4), Math.log(50)] };
+  const clamp = (x, lo, hi) => Math.min(Math.max(x, lo), hi);
+
+  const DISCOUNT = {
+    hyperbolic: (D, k) => 1 / (1 + k * D), // Mazur (1987)
+    exponential: (D, k) => Math.exp(-k * D) // Samuelson (1937)
+  };
+
+  function negLogLik(model, logk, logb, rows) {
+    const f = DISCOUNT[model];
+    const k = Math.exp(clamp(logk, ...BOUNDS.logk));
+    const b = Math.exp(clamp(logb, ...BOUNDS.logb));
+    let nll = 0;
+    for (const r of rows) {
+      const vss = r.amount_sooner * f(r.delay_sooner, k);
+      const vll = r.amount_later * f(r.delay_later, k);
+      const z = clamp(b * (vll - vss), -50, 50);
+      let p = 1 / (1 + Math.exp(-z));
+      p = clamp(p, 1e-10, 1 - 1e-10);
+      nll -= r.choice ? Math.log(p) : Math.log(1 - p);
+    }
+    return nll;
+  }
+
+  // Minimal Nelder-Mead for 2 parameters.
+  function nelderMead(fn, x0, step = 1, iters = 400) {
+    let s = [x0, [x0[0] + step, x0[1]], [x0[0], x0[1] + step]].map((x) => ({ x, f: fn(x) }));
+    for (let i = 0; i < iters; i++) {
+      s.sort((a, b) => a.f - b.f);
+      if (Math.abs(s[2].f - s[0].f) < 1e-9) break;
+      const c = [(s[0].x[0] + s[1].x[0]) / 2, (s[0].x[1] + s[1].x[1]) / 2];
+      const pt = (t) => [c[0] + t * (s[2].x[0] - c[0]), c[1] + t * (s[2].x[1] - c[1])];
+      const r = { x: pt(-1) }; r.f = fn(r.x);
+      if (r.f < s[0].f) {
+        const e = { x: pt(-2) }; e.f = fn(e.x);
+        s[2] = e.f < r.f ? e : r;
+      } else if (r.f < s[1].f) {
+        s[2] = r;
+      } else {
+        const k = { x: pt(r.f < s[2].f ? -0.5 : 0.5) }; k.f = fn(k.x);
+        if (k.f < Math.min(r.f, s[2].f)) s[2] = k;
+        else {
+          s = s.map((v, j) => j === 0 ? v : (() => {
+            const x = [(v.x[0] + s[0].x[0]) / 2, (v.x[1] + s[0].x[1]) / 2];
+            return { x, f: fn(x) };
+          })());
+        }
+      }
+    }
+    s.sort((a, b) => a.f - b.f);
+    return s[0];
+  }
+
+  /** Fit one model. rows: [{amount_sooner, delay_sooner, amount_later, delay_later, choice}] */
+  function fitModel(model, rows) {
+    const fn = (x) => negLogLik(model, x[0], x[1], rows);
+    let best = null;
+    for (const k0 of [1e-4, 1e-2, 0.1, 1]) {
+      for (const b0 of [0.01, 0.1, 1]) {
+        const r = nelderMead(fn, [Math.log(k0), Math.log(b0)]);
+        if (!best || r.f < best.f) best = r;
+      }
+    }
+    const logk = clamp(best.x[0], ...BOUNDS.logk);
+    const logb = clamp(best.x[1], ...BOUNDS.logb);
+    const n = rows.length;
+    return {
+      model, k: Math.exp(logk), log_k: logk, beta: Math.exp(logb), nll: best.f,
+      bic: 2 * best.f + 2 * Math.log(n), aic: 2 * best.f + 4,
+      pseudo_r2: 1 - best.f / (n * Math.log(2)),
+      at_bound: logk <= BOUNDS.logk[0] + 1e-3 || logk >= BOUNDS.logk[1] - 1e-3
+    };
+  }
+
+  /** Kirby, Petry & Bickel (1999) consistency method. */
+  function kirbyK(rows) {
+    const ks = [...new Set(rows.map((r) => +r.k_indiff))].sort((a, b) => a - b);
+    if (!ks.length) return null;
+    const cands = [ks[0] / 2];
+    for (let i = 1; i < ks.length; i++) cands.push(Math.sqrt(ks[i - 1] * ks[i]));
+    cands.push(ks[ks.length - 1] * 2);
+    const cons = cands.map((kc) => rows.filter((r) => ((+r.k_indiff > kc) ? 1 : 0) === r.choice).length / rows.length);
+    const max = Math.max(...cons);
+    const tied = cands.filter((_, i) => Math.abs(cons[i] - max) < 1e-12);
+    const k = Math.exp(tied.reduce((a, v) => a + Math.log(v), 0) / tied.length);
+    return { k, consistency: max };
+  }
+
+  /** Indifference points from the adjusting-amount staircase (Du et al., 2002). */
+  function indifferencePoints(rows, nSteps = 6) {
+    const by = {};
+    rows.forEach((r) => { (by[r.delay_later] = by[r.delay_later] || []).push(r); });
+    return Object.keys(by).map(Number).sort((a, b) => a - b).map((d) => {
+      const ll = +by[d][0].amount_later;
+      let ss = ll / 2, step = ll / 4;
+      by[d].slice(0, nSteps).forEach((r) => {
+        ss = clamp(ss + (r.choice === 1 ? step : -step), 0, ll);
+        step /= 2;
+      });
+      return { delay: d, indiff_prop: ss / ll };
+    });
+  }
+
+  /** Myerson, Green & Warusawitharana (2001) normalised AUC. */
+  function auc(ips) {
+    const pts = [{ delay: 0, indiff_prop: 1 }].concat(ips);
+    const maxD = pts[pts.length - 1].delay;
+    let a = 0;
+    for (let i = 1; i < pts.length; i++) {
+      a += (pts[i].delay - pts[i - 1].delay) / maxD * (pts[i].indiff_prop + pts[i - 1].indiff_prop) / 2;
+    }
+    return a;
+  }
+
+  /** Johnson & Bickel (2008) nonsystematic-data criteria. */
+  function johnsonBickel(ips) {
+    const v = ips.map((p) => p.indiff_prop);
+    let c1 = false;
+    for (let i = 1; i < v.length; i++) if (v[i] - v[i - 1] > 0.2) c1 = true;
+    const c2 = v.length > 1 && (v[0] - v[v.length - 1]) < 0.1;
+    return { c1, c2, nonsystematic: c1 || c2 };
+  }
+
+  /** Everything the app stores per session. rows = main-phase, non-catch trials. */
+  function summarize(rows, mode) {
+    const out = {};
+    if (rows.length >= 5) {
+      const h = fitModel('hyperbolic', rows);
+      const e = fitModel('exponential', rows);
+      Object.assign(out, {
+        k_hyp: h.k, log_k_hyp: h.log_k, beta_hyp: h.beta, nll_hyp: h.nll, bic_hyp: h.bic,
+        pseudo_r2_hyp: h.pseudo_r2, k_at_bound: h.at_bound ? 1 : 0,
+        k_exp: e.k, beta_exp: e.beta, nll_exp: e.nll, bic_exp: e.bic,
+        best_model: h.bic <= e.bic ? 'hyperbolic' : 'exponential'
+      });
+    }
+    if (mode === 'kirby') {
+      const kk = kirbyK(rows);
+      if (kk) { out.kirby_k = kk.k; out.kirby_consistency = kk.consistency; }
+    }
+    if (mode === 'adjusting') {
+      const ips = indifferencePoints(rows);
+      out.auc = auc(ips);
+      out.jb_nonsystematic = johnsonBickel(ips).nonsystematic ? 1 : 0;
+      out.indiff_points = ips.map((p) => p.delay + ':' + p.indiff_prop.toFixed(3)).join(' ');
+    }
+    return out;
+  }
+
+  global.DDTFit = { negLogLik, fitModel, kirbyK, indifferencePoints, auc, johnsonBickel, summarize };
+  if (typeof module !== 'undefined') module.exports = global.DDTFit;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// ---- webapp/src/app.js ----
+/*
+ * Web app client: researcher tabs (start / data / summary) and the
+ * participant task. Talks to Code.gs through google.script.run.
+ */
+(function () {
+  'use strict';
+  const C = window.DDTCore;
+  const F = window.DDTFit;
+  const $ = (id) => document.getElementById(id);
+  const ITI_MS = 500;
+  const FEEDBACK_MS = 250;
+  const PENDING_KEY = 'ddt_pending_v1';
+
+  const app = { config: null, sessions: [], editing: null };
+  let session = null, meta = null, current = null, onsetT = 0, waiting = false;
+
+  // ---------- server calls ----------
+  function call(fn, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run.withSuccessHandler(resolve)
+        .withFailureHandler((e) => reject(e && e.message ? e : new Error(String(e))))[fn](...args);
+    });
+  }
+
+  // ---------- navigation ----------
+  function showTab(id) {
+    document.body.classList.remove('in-task');
+    document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+    $(id).classList.remove('hidden');
+    document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === id));
+    if (id === 'tab-data' || id === 'tab-summary') refreshSessions();
+  }
+
+  function showTask(id) {
+    document.body.classList.add('in-task');
+    document.querySelectorAll('.screen').forEach((s) => s.classList.add('hidden'));
+    $(id).classList.remove('hidden');
+  }
+
+  function fillSelect(sel, items, value) {
+    sel.innerHTML = items.map((v) => '<option>' + esc(v) + '</option>').join('');
+    if (value !== undefined && items.indexOf(value) >= 0) sel.value = value;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function showError(el, msg) { el.textContent = msg; el.classList.toggle('hidden', !msg); }
+
+  // ---------- start ----------
+  async function loadConfig() {
+    try {
+      const cfg = await call('getConfig');
+      app.config = cfg;
+      fillSelect($('in-group'), cfg.groups);
+      fillSelect($('in-label'), cfg.labels);
+      fillSelect($('ed-group'), cfg.groups);
+      fillSelect($('ed-label'), cfg.labels);
+      const d = cfg.defaults || {};
+      if (d.default_mode) $('in-mode').value = d.default_mode;
+      if (d.scale) $('in-scale').value = d.scale;
+      if (d.currency) $('in-currency').value = d.currency;
+      if (d.practice !== undefined) $('in-practice').checked = String(d.practice).toUpperCase() !== 'FALSE';
+      if (d.catch_trials !== undefined) $('in-catch').checked = String(d.catch_trials).toUpperCase() !== 'FALSE';
+      $('user-line').textContent = cfg.user ? 'เข้าสู่ระบบ: ' + cfg.user : '';
+      $('sheet-link').href = cfg.sheetUrl;
+      refreshSessions();
+    } catch (e) {
+      showError($('start-error'), e.message);
+    }
+  }
+
+  // Typing a known subjID fills in the group used before.
+  function onIdInput() {
+    const id = $('in-id').value.trim();
+    const prev = app.sessions.find((s) => String(s.subjID) === id);
+    if (prev && app.config.groups.indexOf(prev.group) >= 0) $('in-group').value = prev.group;
+  }
+
+  async function startTask() {
+    showError($('start-error'), '');
+    const id = $('in-id').value.trim();
+    if (!id) return showError($('start-error'), 'กรุณาใส่รหัสผู้เข้าร่วม');
+    if (!/^[A-Za-z0-9ก-๙_.-]{1,40}$/.test(id)) return showError($('start-error'), 'รหัสใช้ได้เฉพาะตัวอักษร ตัวเลข _ . - (ไม่เกิน 40 ตัว)');
+    const m = {
+      subjID: id, group: $('in-group').value, session_label: $('in-label').value, mode: $('in-mode').value
+    };
+    $('btn-start').disabled = true;
+    try {
+      const dups = await call('checkDuplicate', m.subjID, m.mode, m.session_label);
+      if (dups.length && !confirm(id + ' เคยทำ ' + m.mode + ' (' + m.session_label + ') แล้ว ' + dups.length +
+          ' ครั้ง\nต้องการทำซ้ำหรือไม่?')) return;
+    } catch (e) {
+      // Server unreachable: allow the session, data will queue locally.
+    } finally {
+      $('btn-start').disabled = false;
+    }
+    meta = Object.assign(m, {
+      session_id: 'S' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      device: (navigator.userAgent.match(/iPad|iPhone|Android|Macintosh|Windows/) || ['other'])[0]
+    });
+    session = C.createSession({
+      id: id, mode: m.mode,
+      scale: parseFloat($('in-scale').value) || 1,
+      currency: $('in-currency').value.trim(),
+      practice: $('in-practice').checked,
+      catchTrials: $('in-catch').checked
+    });
+    $('instr-text').innerHTML = instructions(m.mode);
+    showTask('screen-instr');
+  }
+
+  function instructions(mode) {
+    return '<p>ในแต่ละข้อ คุณจะเห็นตัวเลือกให้รับเงิน 2 แบบ คือ ' +
+      '<b>เงินจำนวนน้อยกว่าที่ได้รับวันนี้</b> หรือ <b>เงินจำนวนมากกว่าที่ได้รับในอนาคต</b></p>' +
+      '<p>ให้เลือกตัวเลือกที่คุณ <b>อยากได้จริง ๆ</b> ไม่มีคำตอบถูกหรือผิด ' +
+      'ให้คิดเสมือนว่าจะได้รับเงินนั้นจริง</p><p>แตะที่ตัวเลือกที่ต้องการ</p>' +
+      (mode === 'adjusting' ? '<p>จำนวนเงินจะเปลี่ยนไปตามคำตอบของคุณ</p>' : '');
+  }
+
+  // ---------- task ----------
+  function optionHtml(amt, d, exact) {
+    return '<span class="amt">' + C.fmtMoney(amt) + ' ' + esc(session.cfg.currency) +
+      '</span><span class="when">' + C.fmtDelay(d, exact) + '</span>';
+  }
+
+  function runNext() {
+    const t = session.next();
+    if (!t) {
+      if (session.phase === 'practice') {
+        session.startMain();
+        $('msg-text').innerHTML = '<h2>จบข้อฝึกหัด</h2><p>ต่อไปเป็นข้อจริง ไม่มีคำตอบถูกหรือผิด เลือกตามที่คุณต้องการจริง ๆ</p>';
+        showTask('screen-msg');
+        return;
+      }
+      finishTask();
+      return;
+    }
+    current = t;
+    const exact = session.cfg.mode === 'kirby' && !t.is_catch && !t.is_practice;
+    const sooner = optionHtml(t.amount_sooner, t.delay_sooner, exact);
+    const later = optionHtml(t.amount_later, t.delay_later, exact);
+    $('opt-left').innerHTML = t.later_on_left ? later : sooner;
+    $('opt-right').innerHTML = t.later_on_left ? sooner : later;
+    ['opt-left', 'opt-right'].forEach((id) => { $(id).classList.remove('chosen'); $(id).disabled = false; });
+    const pr = session.progress();
+    $('trial-progress').textContent = session.phase === 'practice' ? 'ข้อฝึกหัด' : 'ข้อที่ ' + (pr.done + 1) + ' / ' + pr.total;
+    showTask('screen-trial');
+    onsetT = performance.now();
+    waiting = true;
+  }
+
+  function respond(side) {
+    if (!waiting) return;
+    waiting = false;
+    const rt = performance.now() - onsetT;
+    const choseLeft = side === 'left';
+    const choice = (choseLeft === (current.later_on_left === 1)) ? 1 : 0;
+    $(choseLeft ? 'opt-left' : 'opt-right').classList.add('chosen');
+    $('opt-left').disabled = true; $('opt-right').disabled = true;
+    session.record(current, choice, rt);
+    setTimeout(() => { showTask('screen-iti'); setTimeout(runNext, ITI_MS); }, FEEDBACK_MS);
+  }
+
+  function buildPayload() {
+    const fit = F.summarize(session.fitRows(), session.cfg.mode);
+    const s = Object.assign({}, meta, session.basicSummary(), fit, {
+      scale: session.cfg.scale, currency: session.cfg.currency, seed: session.seed,
+      started_at: session.startedAt, finished_at: new Date().toISOString()
+    });
+    // Practice trials are not stored; catch trials are stored with is_catch = 1.
+    return { session: s, trials: session.mainRows() };
+  }
+
+  async function finishTask() {
+    const payload = buildPayload();
+    $('end-summary').textContent = resultText(payload.session);
+    $('end-summary').classList.add('hidden');
+    showTask('screen-end');
+    // Queue first so nothing is lost if the network or tab dies mid-save.
+    addPending(payload);
+    await sendPending(true);
+  }
+
+  function resultText(s) {
+    const n = (x, d = 4) => (x === '' || x == null ? 'NA' : (+x).toPrecision(d));
+    const lines = [
+      s.subjID + ' | ' + s.group + ' | ' + s.session_label + ' | ' + s.mode,
+      'trials ' + s.n_trials + ', catch fail ' + s.catch_fail + '/' + s.n_catch + ', P(later) ' + n(s.prop_later, 3) + ', median RT ' + s.median_rt + ' ms',
+      'Hyperbolic k = ' + n(s.k_hyp) + ' (log k ' + n(s.log_k_hyp) + '), beta = ' + n(s.beta_hyp),
+      'Exponential k = ' + n(s.k_exp) + '; best by BIC: ' + (s.best_model || 'NA')
+    ];
+    if (s.kirby_k) lines.push('Kirby k = ' + n(s.kirby_k) + ' (consistency ' + n(s.kirby_consistency, 3) + ')');
+    if (s.auc !== undefined && s.auc !== '') lines.push('AUC = ' + n(s.auc, 3) + (Number(s.jb_nonsystematic) ? ' [nonsystematic]' : ''));
+    if (Number(s.k_at_bound)) lines.push('⚠ k ติดขอบ (ประมาณค่าได้ไม่แม่น)');
+    return lines.join('\n');
+  }
+
+  // ---------- offline-safe saving ----------
+  function getPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function setPending(list) {
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+    const n = list.length;
+    $('pending-text').textContent = 'มีข้อมูลค้างส่ง ' + n + ' รายการ (เก็บไว้ในเครื่องนี้)';
+    $('pending-banner').classList.toggle('hidden', n === 0);
+  }
+  function addPending(p) {
+    const list = getPending().filter((x) => x.session.session_id !== p.session.session_id);
+    list.push(p);
+    setPending(list);
+    app.unsaved = p; // in-memory copy in case storage is unavailable
+  }
+
+  async function sendPending(fromEnd) {
+    let list = getPending();
+    if (!list.length && app.unsaved) list = [app.unsaved];
+    const status = $('save-status');
+    if (fromEnd) { status.className = 'status'; status.textContent = 'กำลังบันทึกข้อมูล…'; }
+    let failed = 0, lastErr = '';
+    for (const p of list) {
+      try {
+        await call('saveSession', p);
+        list = list.filter((x) => x.session.session_id !== p.session.session_id);
+        if (app.unsaved && app.unsaved.session.session_id === p.session.session_id) app.unsaved = null;
+      } catch (e) {
+        failed += 1; lastErr = e.message;
+      }
+    }
+    setPending(list);
+    if (fromEnd) {
+      status.className = 'status ' + (failed ? 'fail' : 'ok');
+      status.textContent = failed ? 'ยังบันทึกไม่ได้ (' + lastErr + ') ข้อมูลเก็บไว้ในเครื่อง กด "ส่งอีกครั้ง" ที่หน้าหลัก'
+        : '✓ บันทึกลง Google Sheet แล้ว';
+    }
+    return failed;
+  }
+
+  // ---------- data tab ----------
+  async function refreshSessions() {
+    $('data-status').textContent = 'กำลังโหลด…';
+    try {
+      app.sessions = await call('listSessions');
+      $('known-ids').innerHTML = [...new Set(app.sessions.map((s) => String(s.subjID)))]
+        .map((v) => '<option value="' + esc(v) + '">').join('');
+      renderCards();
+      renderSummary();
+    } catch (e) {
+      $('data-status').textContent = e.message;
+    }
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? String(iso) : d.toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  function maxCatchFail() {
+    const v = Number((app.config && app.config.defaults.max_catch_fail));
+    return isFinite(v) ? v : 1;
+  }
+
+  function renderCards() {
+    const q = $('search').value.trim().toLowerCase();
+    const list = app.sessions.filter((s) => !q ||
+      [s.subjID, s.group, s.mode, s.session_label].some((v) => String(v).toLowerCase().includes(q)));
+    $('data-status').textContent = list.length + ' session' + (q ? ' (จาก ' + app.sessions.length + ')' : '');
+    const n = (x, d = 3) => (x === '' || x == null ? 'NA' : (+x).toPrecision(d));
+    $('cards').innerHTML = list.map((s) => {
+      const tags = [];
+      if (Number(s.exclude)) tags.push('<span class="tag bad">exclude</span>');
+      if (Number(s.catch_fail) > maxCatchFail()) tags.push('<span class="tag bad">catch ' + s.catch_fail + '/' + s.n_catch + '</span>');
+      if (Number(s.k_at_bound)) tags.push('<span class="tag warn">k ติดขอบ</span>');
+      if (Number(s.jb_nonsystematic)) tags.push('<span class="tag warn">nonsystematic</span>');
+      if (s.kirby_consistency !== '' && Number(s.kirby_consistency) < 0.75) tags.push('<span class="tag warn">consistency ต่ำ</span>');
+      return '<div class="card' + (Number(s.exclude) ? ' excluded' : '') + '">' +
+        '<div class="card-top"><b>' + esc(s.subjID) + '</b><span class="meta">' + esc(fmtDate(s.finished_at)) + '</span></div>' +
+        '<div class="meta">' + esc(s.group) + ' · ' + esc(s.session_label) + ' · ' + esc(s.mode) + '</div>' +
+        '<div class="nums">k = ' + n(s.k_hyp) + ' · log k = ' + n(s.log_k_hyp) + ' · β = ' + n(s.beta_hyp) +
+        ' · P(later) = ' + n(s.prop_later, 2) + (s.auc !== '' ? ' · AUC = ' + n(s.auc) : '') +
+        (s.kirby_k !== '' ? ' · Kirby k = ' + n(s.kirby_k) : '') + '</div>' +
+        (tags.length ? '<div>' + tags.join('') + '</div>' : '') +
+        (s.note ? '<div class="meta">📝 ' + esc(s.note) + '</div>' : '') +
+        '<div class="actions"><button data-edit="' + esc(s.session_id) + '">แก้ไข</button>' +
+        '<button data-del="' + esc(s.session_id) + '">ลบ</button></div></div>';
+    }).join('') || '<p class="muted">ยังไม่มีข้อมูล</p>';
+  }
+
+  function openEdit(id) {
+    const s = app.sessions.find((x) => x.session_id === id);
+    if (!s) return;
+    app.editing = s;
+    $('dlg-title').textContent = 'แก้ไข ' + s.subjID + ' (' + s.mode + ')';
+    $('ed-group').value = s.group;
+    $('ed-label').value = s.session_label;
+    $('ed-exclude').checked = Number(s.exclude) === 1;
+    $('ed-note').value = s.note || '';
+    showError($('dlg-error'), '');
+    $('dlg').classList.remove('hidden');
+  }
+
+  async function saveEdit() {
+    const s = app.editing;
+    $('ed-save').disabled = true;
+    try {
+      await call('updateSession', s.session_id, {
+        group: $('ed-group').value, session_label: $('ed-label').value,
+        exclude: $('ed-exclude').checked, note: $('ed-note').value
+      }, s.updatedAt);
+      $('dlg').classList.add('hidden');
+      refreshSessions();
+    } catch (e) {
+      showError($('dlg-error'), e.message);
+    } finally {
+      $('ed-save').disabled = false;
+    }
+  }
+
+  async function deleteSession(id) {
+    const s = app.sessions.find((x) => x.session_id === id);
+    if (!s || !confirm('ลบข้อมูล ' + s.subjID + ' (' + s.mode + ', ' + fmtDate(s.finished_at) + ') ทั้งหมด?\nลบแล้วกู้คืนไม่ได้')) return;
+    try {
+      await call('deleteSession', id, s.updatedAt);
+      refreshSessions();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // ---------- summary tab ----------
+  function stats(xs) {
+    const v = xs.filter((x) => x !== '' && x != null && isFinite(+x)).map(Number);
+    if (!v.length) return { n: 0 };
+    const m = v.reduce((a, b) => a + b, 0) / v.length;
+    const sd = v.length > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1)) : NaN;
+    return { n: v.length, m, sd };
+  }
+
+  function renderSummary() {
+    const valid = app.sessions.filter((s) => !Number(s.exclude) && !(Number(s.catch_fail) > maxCatchFail()));
+    const groups = (app.config && app.config.groups) || [];
+    const modes = ['grid', 'kirby', 'adjusting'];
+    const f = (x, d = 2) => (isFinite(x) ? x.toFixed(d) : '–');
+    let html = '<p>ทั้งหมด ' + app.sessions.length + ' session · ใช้วิเคราะห์ได้ ' + valid.length +
+      ' · exclude/ผิด catch ' + (app.sessions.length - valid.length) + '</p>';
+    modes.forEach((mode) => {
+      const rows = valid.filter((s) => s.mode === mode);
+      if (!rows.length) return;
+      html += '<h3>' + mode + '</h3><div class="table-wrap"><table><tr><th>กลุ่ม</th><th>n</th>' +
+        '<th>log k (mean ± SD)</th><th>β median</th><th>P(later)</th>' +
+        (mode === 'adjusting' ? '<th>AUC</th>' : '') + (mode === 'kirby' ? '<th>Kirby log k</th>' : '') + '</tr>';
+      groups.forEach((g) => {
+        const r = rows.filter((s) => s.group === g);
+        if (!r.length) return;
+        const lk = stats(r.map((s) => s.log_k_hyp));
+        const pl = stats(r.map((s) => s.prop_later));
+        const betas = r.map((s) => +s.beta_hyp).filter(isFinite).sort((a, b) => a - b);
+        const bmed = betas.length ? betas[Math.floor(betas.length / 2)] : NaN;
+        html += '<tr><td>' + esc(g) + '</td><td>' + r.length + '</td><td>' + f(lk.m) + ' ± ' + f(lk.sd) +
+          '</td><td>' + (isFinite(bmed) ? bmed.toPrecision(3) : '–') + '</td><td>' + f(pl.m) + '</td>';
+        if (mode === 'adjusting') { const a = stats(r.map((s) => s.auc)); html += '<td>' + f(a.m) + ' ± ' + f(a.sd) + '</td>'; }
+        if (mode === 'kirby') { const kk = stats(r.map((s) => s.kirby_k ? Math.log(s.kirby_k) : '')); html += '<td>' + f(kk.m) + ' ± ' + f(kk.sd) + '</td>'; }
+        html += '</tr>';
+      });
+      const best = { hyperbolic: 0, exponential: 0 };
+      rows.forEach((s) => { if (best[s.best_model] !== undefined) best[s.best_model] += 1; });
+      html += '</table></div><p class="muted small">Best model (BIC): hyperbolic ' + best.hyperbolic +
+        ', exponential ' + best.exponential + ' คน · ค่าเหล่านี้เป็นการดูเบื้องต้น การวิเคราะห์จริงใช้ analysis/ (Python) หรือ hBayesDM</p>';
+    });
+    $('summary-body').innerHTML = html;
+  }
+
+  async function exportCsv() {
+    $('btn-export').disabled = true;
+    $('export-result').textContent = 'กำลังสร้างไฟล์…';
+    try {
+      const r = await call('exportCsv');
+      $('export-result').innerHTML = 'สร้างไฟล์แล้วในโฟลเดอร์ <a target="_blank" rel="noopener" href="' + esc(r.folderUrl) +
+        '">DDT exports</a>: <a target="_blank" rel="noopener" href="' + esc(r.trialsUrl) + '">trials</a> · ' +
+        '<a target="_blank" rel="noopener" href="' + esc(r.sessionsUrl) + '">sessions</a>';
+    } catch (e) {
+      $('export-result').textContent = e.message;
+    } finally {
+      $('btn-export').disabled = false;
+    }
+  }
+
+  // ---------- wiring ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#tabbar button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    $('in-id').addEventListener('input', onIdInput);
+    $('btn-start').addEventListener('click', startTask);
+    $('btn-instr').addEventListener('click', runNext);
+    $('btn-abort').addEventListener('click', () => { if (confirm('ยกเลิก session นี้? ข้อมูลจะไม่ถูกบันทึก')) showTab('tab-start'); });
+    $('btn-msg').addEventListener('click', runNext);
+    $('opt-left').addEventListener('click', () => respond('left'));
+    $('opt-right').addEventListener('click', () => respond('right'));
+    $('btn-show-result').addEventListener('click', () => $('end-summary').classList.toggle('hidden'));
+    $('btn-home').addEventListener('click', () => { $('in-id').value = ''; showTab('tab-start'); refreshSessions(); });
+    $('btn-retry').addEventListener('click', () => sendPending(false).then(refreshSessions));
+    $('search').addEventListener('input', renderCards);
+    $('cards').addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.dataset.edit) openEdit(t.dataset.edit);
+      if (t.dataset.del) deleteSession(t.dataset.del);
+    });
+    $('ed-save').addEventListener('click', saveEdit);
+    $('ed-cancel').addEventListener('click', () => $('dlg').classList.add('hidden'));
+    $('btn-export').addEventListener('click', exportCsv);
+    document.addEventListener('keydown', (e) => {
+      if ($('screen-trial').classList.contains('hidden')) return;
+      const k = e.key.toLowerCase();
+      if (k === 'f' || e.key === 'ArrowLeft') respond('left');
+      if (k === 'j' || e.key === 'ArrowRight') respond('right');
+    });
+    window.addEventListener('beforeunload', (e) => {
+      if (document.body.classList.contains('in-task') && $('screen-end').classList.contains('hidden')) {
+        e.preventDefault(); e.returnValue = '';
+      }
+    });
+    setPending(getPending());
+    loadConfig().then(() => { if (getPending().length) sendPending(false).then(refreshSessions); });
+  });
+})();
+
+  </script>
+</body>
+</html>

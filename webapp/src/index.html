@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Delay Discounting Task</title>
+  <style>
+/*@@CSS@@*/
+  </style>
+</head>
+<body>
+  <div id="pending-banner" class="banner hidden">
+    <span id="pending-text"></span>
+    <button id="btn-retry" class="small-btn">ส่งอีกครั้ง</button>
+  </div>
+
+  <main id="app">
+    <!-- ===== Researcher: start ===== -->
+    <section id="tab-start" class="tab screen">
+      <h1>Delay Discounting Task</h1>
+      <p class="muted small" id="user-line"></p>
+      <label>รหัสผู้เข้าร่วม (subjID)
+        <input id="in-id" type="text" list="known-ids" placeholder="เช่น S001 (ห้ามใช้ชื่อจริง/เลขบัตรประชาชน)" autocomplete="off">
+        <datalist id="known-ids"></datalist>
+      </label>
+      <div class="two">
+        <label>กลุ่ม (group)<select id="in-group"></select></label>
+        <label>ครั้งที่ (session)<select id="in-label"></select></label>
+      </div>
+      <label>รูปแบบงาน (mode)
+        <select id="in-mode">
+          <option value="grid">Model-based grid 56 ข้อ (แนะนำสำหรับ fit model)</option>
+          <option value="kirby">Kirby MCQ 27 ข้อ (Kirby et al., 1999)</option>
+          <option value="adjusting">Adjusting-amount 42 ข้อ (Du et al., 2002)</option>
+        </select>
+      </label>
+      <div class="two">
+        <label>ตัวคูณจำนวนเงิน<input id="in-scale" type="number" min="0.01" step="any" value="10"></label>
+        <label>หน่วยเงิน<input id="in-currency" type="text" value="บาท"></label>
+      </div>
+      <label class="row"><input id="in-practice" type="checkbox" checked> มีข้อฝึกหัด 2 ข้อ</label>
+      <label class="row"><input id="in-catch" type="checkbox" checked> แทรก catch trials 3 ข้อ</label>
+      <p id="start-error" class="error hidden"></p>
+      <button id="btn-start" class="primary big">เริ่มงาน (ส่ง iPad ให้ผู้เข้าร่วม)</button>
+    </section>
+
+    <!-- ===== Researcher: data ===== -->
+    <section id="tab-data" class="tab screen hidden">
+      <h2>ข้อมูล</h2>
+      <input id="search" type="search" placeholder="ค้นหา subjID / กลุ่ม / mode">
+      <p id="data-status" class="muted small"></p>
+      <div id="cards"></div>
+    </section>
+
+    <!-- ===== Researcher: summary ===== -->
+    <section id="tab-summary" class="tab screen hidden">
+      <h2>สรุป</h2>
+      <p class="muted small">ไม่นับ session ที่ถูก exclude หรือผิด catch trial เกินเกณฑ์ (ตั้งค่า <code>max_catch_fail</code>)</p>
+      <div id="summary-body"></div>
+      <div class="btns">
+        <button id="btn-export" class="primary">ส่งออก CSV ไปที่ Google Drive</button>
+        <a id="sheet-link" class="btn" target="_blank" rel="noopener">เปิด Google Sheet</a>
+      </div>
+      <div id="export-result" class="small"></div>
+    </section>
+
+    <!-- ===== Participant screens ===== -->
+    <section id="screen-instr" class="screen task hidden">
+      <h2>คำชี้แจง</h2>
+      <div id="instr-text"></div>
+      <button id="btn-instr" class="primary big">เข้าใจแล้ว เริ่มได้</button>
+      <button id="btn-abort" class="link small">ยกเลิก (ผู้วิจัย)</button>
+    </section>
+    <section id="screen-trial" class="screen task hidden">
+      <p id="trial-progress" class="muted small"></p>
+      <p class="question">คุณจะเลือกรับเงินแบบไหน?</p>
+      <div class="options">
+        <button id="opt-left" class="option"></button>
+        <button id="opt-right" class="option"></button>
+      </div>
+      <p class="muted small keys">แป้นพิมพ์: <kbd>F</kbd> = ซ้าย, <kbd>J</kbd> = ขวา</p>
+    </section>
+    <section id="screen-iti" class="screen task hidden"><div class="fix">+</div></section>
+    <section id="screen-msg" class="screen task hidden">
+      <div id="msg-text"></div>
+      <button id="btn-msg" class="primary big">ต่อไป</button>
+    </section>
+    <section id="screen-end" class="screen task hidden">
+      <h2>จบการทดสอบ ขอบคุณค่ะ/ครับ</h2>
+      <p>กรุณาส่งเครื่องคืนผู้วิจัย</p>
+      <p id="save-status" class="status"></p>
+      <pre id="end-summary" class="hidden"></pre>
+      <div class="btns">
+        <button id="btn-show-result">ดูผล (ผู้วิจัย)</button>
+        <button id="btn-home" class="primary">กลับหน้าหลัก</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Edit dialog -->
+  <div id="dlg" class="dlg hidden">
+    <div class="dlg-box">
+      <h3 id="dlg-title">แก้ไข</h3>
+      <label>กลุ่ม<select id="ed-group"></select></label>
+      <label>ครั้งที่<select id="ed-label"></select></label>
+      <label class="row"><input id="ed-exclude" type="checkbox"> Exclude จากการวิเคราะห์</label>
+      <label>หมายเหตุ<textarea id="ed-note" rows="3"></textarea></label>
+      <p id="dlg-error" class="error hidden"></p>
+      <div class="btns">
+        <button id="ed-save" class="primary">บันทึก</button>
+        <button id="ed-cancel">ยกเลิก</button>
+      </div>
+    </div>
+  </div>
+
+  <nav id="tabbar">
+    <button data-tab="tab-start" class="active">▶<span>เริ่ม</span></button>
+    <button data-tab="tab-data">☰<span>ข้อมูล</span></button>
+    <button data-tab="tab-summary">Σ<span>สรุป</span></button>
+  </nav>
+
+  <script>
+/*@@JS@@*/
+  </script>
+</body>
+</html>

@@ -60,6 +60,9 @@ def fit_model(df: pd.DataFrame, model: Model | str, value_scale: float = 1.0) ->
     # participant who always chose the later option).
     out["at_bound"] = bool(any(np.isclose(v, b, atol=1e-3).any()
                                for v, b in zip(best.x, bounds)))
+    # Perfectly consistent choices (NLL ~ 0): k is only known to lie in an
+    # interval and beta is unbounded. Report, and consider hierarchical fitting.
+    out["perfect_fit"] = bool(nll < 1e-3)
     return out
 
 

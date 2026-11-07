@@ -2,6 +2,7 @@
 
 ชุดเครื่องมือสำหรับเก็บข้อมูลและวิเคราะห์ **delay discounting** (การลดคุณค่าของรางวัลตามเวลาที่ต้องรอ) ประกอบด้วย
 
+0. **`webapp/`** เว็บแอป (Google Apps Script) เก็บข้อมูลลง Google Sheet และ fit model ทันที **แนะนำสำหรับเก็บข้อมูลจริง** ดูวิธีติดตั้งที่ [webapp/README.md](webapp/README.md)
 1. **`task/`** ตัวงานบนเว็บเบราว์เซอร์ (HTML/JS ล้วน ไม่ต้องติดตั้งอะไร ใช้ออฟไลน์ได้ รองรับมือถือ/แท็บเล็ต) มี 3 รูปแบบตามงานวิจัยต้นแบบ
 2. **`analysis/`** โค้ด Python สำหรับ fit computational model ทีละคน (MLE) เปรียบเทียบโมเดล ตรวจคุณภาพข้อมูล และทำ parameter recovery
 3. **`analysis/fit_hbayesdm.R`** สคริปต์ hierarchical Bayesian ด้วย hBayesDM
@@ -115,8 +116,11 @@ $$V = A \cdot f(D), \qquad P(\text{LL}) = \frac{1}{1 + e^{-\beta (V_{LL} - V_{SS
 cd analysis
 pip install -r requirements.txt
 
-# fit ทุกคน ทุกโมเดล
+# fit ทุกคน ทุกโมเดล (ไฟล์จาก task/ หรือ ddt_trials_*.csv ที่ export จากเว็บแอป)
 python -m ddt.fit ../data/*.txt --out results.csv
+
+# เปรียบเทียบ log k ระหว่างกลุ่ม (Welch t, Mann-Whitney, Hedges g) และ summed BIC
+python -m ddt.compare results.csv
 
 # ตรวจว่า design กู้ค่าพารามิเตอร์กลับมาได้ (ควรทำก่อนเก็บข้อมูลจริง)
 python -m ddt.recovery --design grid --n 200
@@ -126,7 +130,7 @@ python -m pytest tests
 ```
 
 `results.csv` มี 1 แถวต่อ ผู้เข้าร่วม × โมเดล: ค่าพารามิเตอร์, `log_k`, NLL, AIC, BIC, AIC/BIC weights, pseudo-R²,
-`at_bound` (ค่าติดขอบ เช่น เลือกอนาคตทุกข้อ) และคะแนนเฉพาะ mode (Kirby k, AUC, indifference points, J&B flags)
+`at_bound` (ค่าติดขอบ เช่น เลือกอนาคตทุกข้อ), `perfect_fit` (ตอบสอดคล้องสมบูรณ์ k ระบุได้เป็นช่วงเท่านั้น ควรใช้ hierarchical model) และคะแนนเฉพาะ mode (Kirby k, AUC, indifference points, J&B flags)
 
 Hierarchical Bayesian (แนะนำเมื่อจำนวนข้อน้อยหรือต้องการประมาณค่าระดับกลุ่ม):
 
@@ -154,7 +158,15 @@ Rscript analysis/fit_hbayesdm.R data/
 ## 6. โครงสร้างไฟล์
 
 ```
+webapp/
+  Code.gs         Apps Script ฝั่ง server (บันทึก/แก้/ลบ/ส่งออก)
+  src/            UI ของเว็บแอป
+  build.js        รวมไฟล์เป็น dist/Index.html
+  dist/Index.html ไฟล์ที่วางใน Apps Script
+  test/           mock ของ Google services + e2e test
 task/
+  core.js         logic ของ task (ใช้ร่วมกันระหว่างหน้า standalone และเว็บแอป)
+  fit.js          fit model ในเบราว์เซอร์ (hyperbolic/exponential, Kirby k, AUC)
   index.html      หน้างาน
   designs.js      ชุดข้อ: Kirby 27, grid, adjusting, catch, practice
   ddt.js          ตัวรันงาน, บันทึก/ดาวน์โหลดข้อมูล
@@ -165,6 +177,7 @@ analysis/
   ddt/scoring.py  Kirby k, indifference points, AUC, Johnson & Bickel
   ddt/fit.py      CLI สำหรับ fit ไฟล์ข้อมูล
   ddt/recovery.py parameter recovery
+  ddt/compare.py  เปรียบเทียบพารามิเตอร์ระหว่างกลุ่ม
   fit_hbayesdm.R  hierarchical Bayesian ด้วย hBayesDM
   tests/
 ```
